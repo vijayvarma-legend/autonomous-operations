@@ -44,7 +44,10 @@ def decide(db: Session, incident: Incident) -> dict:
         db.query(AuditLogEntry)
         .filter(
             AuditLogEntry.incident_id == incident.id,
-            AuditLogEntry.action == "evidence_gathered",
+            # verification_failed included so a Verifier retry loop feeds its
+            # failure straight back into the next diagnosis, per CLAUDE.md's
+            # "Verifier failure sends evidence back to Decision Agent" flow.
+            AuditLogEntry.action.in_(["evidence_gathered", "verification_failed"]),
         )
         .order_by(AuditLogEntry.created_at)
         .all()

@@ -100,11 +100,14 @@ before moving on. Status:
       Docker socket/API, which is host-level access; when built, scope it
       to read-only container status calls, never exec/start/stop/remove,
       until the Recovery Agent's sandboxing story is designed.
-- [ ] Planner Agent
-- [ ] Investigator agents (one at a time)
-- [ ] Decision Agent
-- [ ] Recovery Agent (sandbox/branch execution)
-- [ ] Verifier Agent + retry loop
+- [x] Planner Agent (LLM: OpenRouter/Nemotron 3 Ultra, via app.llm)
+- [x] Investigator agents — Log and Git Diff done (deterministic, no LLM);
+      Database/Dependency/Infrastructure remain stubs (Database/Docker
+      sources still deferred, see above)
+- [x] Decision Agent (enforces CONFIDENCE_THRESHOLD in code)
+- [x] Recovery Agent (sandbox/branch execution; enforces MAX_RECOVERY_ATTEMPTS)
+- [x] Verifier Agent + retry loop (polls CI on the fix branch; failure
+      feeds back into Decision Agent's evidence query)
 - [ ] Human approval gate + PR flow
 - [ ] LangGraph wiring end-to-end
 
