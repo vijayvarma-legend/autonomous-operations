@@ -110,7 +110,11 @@ before moving on. Status:
       feeds back into Decision Agent's evidence query)
 - [x] Human approval gate + PR flow (POST /incidents/{id}/approve|reject|merge;
       merge is guarded on APPROVED state in code, not just convention)
-- [ ] LangGraph wiring end-to-end
+- [x] LangGraph wiring end-to-end (src/app/graph.py, run_incident(db, id);
+      state-based resume instead of a checkpointer — see module docstring.
+      A scheduler to re-invoke run_incident on VERIFYING incidents once CI
+      completes is NOT built yet — nothing currently re-checks pending
+      verifications on its own.)
 
 Update the checklist as steps land.
 
