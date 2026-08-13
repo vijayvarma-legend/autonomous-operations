@@ -17,8 +17,10 @@ class Settings(BaseSettings):
     app_log_path: str = ""
 
     llm_provider: str = "undecided"
+    llm_model: str = ""  # blank = provider's default (see app.llm._DEFAULT_MODELS)
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    openrouter_api_key: str = ""
 
     max_recovery_attempts: int = 3
     confidence_threshold: float = 0.7
