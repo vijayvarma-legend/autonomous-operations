@@ -21,14 +21,15 @@ _LOG_LINE_RE = re.compile(
 
 
 @dataclass(frozen=True)
-class _ParsedLine:
+class ParsedLine:
     timestamp: datetime
     level: str
     logger: str
     message: str
+    raw_line: str
 
 
-def _parse_log_line(line: str) -> _ParsedLine | None:
+def _parse_log_line(line: str) -> ParsedLine | None:
     match = _LOG_LINE_RE.match(line.rstrip("\n"))
     if match is None:
         return None
@@ -37,48 +38,59 @@ def _parse_log_line(line: str) -> _ParsedLine | None:
     timestamp = datetime.strptime(match["timestamp"], "%Y-%m-%d %H:%M:%S,%f").replace(
         tzinfo=timezone.utc
     )
-    return _ParsedLine(
+    return ParsedLine(
         timestamp=timestamp,
         level=match["level"],
         logger=match["logger"],
         message=match["message"],
+        raw_line=line.strip(),
     )
+
+
+def parse_log_lines(lines: Iterable[str]) -> list[ParsedLine]:
+    """Every leveled log line, any level. Unparseable lines are skipped, not
+    errors — logs are free text and not every line is a leveled record.
+    Shared by scan_error_logs (detection) and the Log Investigator
+    (investigation), which need the same parsing but different level filters.
+    """
+    return [parsed for line in lines if (parsed := _parse_log_line(line)) is not None]
+
+
+def read_configured_log_lines() -> list[str]:
+    if not settings.app_log_path:
+        raise RuntimeError("APP_LOG_PATH is not configured")
+    with open(settings.app_log_path, encoding="utf-8") as f:
+        return f.readlines()
 
 
 def scan_error_logs(since: datetime, lines: Iterable[str] | None = None) -> list[RawFailure]:
     """ERROR/CRITICAL log lines at or after `since`. Reads APP_LOG_PATH by
     default; pass `lines` directly to scan something else (tests, a
-    different file). Unparseable lines are skipped, not errors — logs are
-    free text and not every line is a leveled record.
+    different file).
     """
     if lines is None:
-        if not settings.app_log_path:
-            raise RuntimeError("APP_LOG_PATH is not configured")
-        with open(settings.app_log_path, encoding="utf-8") as f:
-            lines = f.readlines()
+        lines = read_configured_log_lines()
 
     failures: list[RawFailure] = []
-    for line in lines:
-        parsed = _parse_log_line(line)
-        if parsed is None or parsed.level not in _ERROR_LEVELS:
+    for parsed in parse_log_lines(lines):
+        if parsed.level not in _ERROR_LEVELS:
             continue
         if parsed.timestamp < since:
             continue
 
-        raw_line = line.strip()
         failures.append(
             RawFailure(
                 source=IncidentSource.APP_LOGS,
                 # Content hash, not line number/offset — stays stable across
                 # re-reads of a growing file, which is all Watcher dedup needs.
-                external_id=hashlib.sha256(raw_line.encode()).hexdigest(),
+                external_id=hashlib.sha256(parsed.raw_line.encode()).hexdigest(),
                 title=f"{parsed.level} in {parsed.logger}: {parsed.message[:120]}",
                 detected_at=parsed.timestamp,
                 raw_payload={
                     "logger": parsed.logger,
                     "level": parsed.level,
                     "message": parsed.message,
-                    "raw_line": raw_line,
+                    "raw_line": parsed.raw_line,
                 },
             )
         )
