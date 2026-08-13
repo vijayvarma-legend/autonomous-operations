@@ -18,3 +18,12 @@ class IncidentOut(BaseModel):
     state: IncidentState
     detected_at: datetime
     created_at: datetime
+
+
+class ApprovalRequest(BaseModel):
+    approved_by: str
+
+
+class RejectionRequest(BaseModel):
+    rejected_by: str
+    reason: str = ""

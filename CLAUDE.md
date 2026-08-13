@@ -108,7 +108,8 @@ before moving on. Status:
 - [x] Recovery Agent (sandbox/branch execution; enforces MAX_RECOVERY_ATTEMPTS)
 - [x] Verifier Agent + retry loop (polls CI on the fix branch; failure
       feeds back into Decision Agent's evidence query)
-- [ ] Human approval gate + PR flow
+- [x] Human approval gate + PR flow (POST /incidents/{id}/approve|reject|merge;
+      merge is guarded on APPROVED state in code, not just convention)
 - [ ] LangGraph wiring end-to-end
 
 Update the checklist as steps land.
